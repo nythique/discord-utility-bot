@@ -2,9 +2,11 @@
 from itertools import cycle
 from discord.ui import View, Button, Modal, TextInput, Select
 from discord.ext import commands, tasks
-from motors import config
+from motors import config, memory
 from io import BytesIO
+from groq import Groq
 import discord, json, os, asyncio, time, random, aiohttp
+
 #FIN}
 
 #{DEBUT : Creation de la fonction du cycle satus
@@ -19,6 +21,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True  # Active l'intention pour les membres
 bot = commands.Bot(command_prefix=config.prefix, intents=intents)
+client = Groq(api_key=config.api_key) # Client pour l'API Groq
 #FIN}
 
 #{DEBUT : Creation de la fonction de verification des fichiers de niveaux
@@ -130,7 +133,7 @@ async def bump_reminder():
         await reminder_message.delete()
 #FIN}
 
-
+''''
 #{DEBUT : Implémenter la vérification des streams (âche asynchrone)
 async def get_twitch_access_token(): # Fonction pour obtenir un token d'accès Twitch
     url = "https://id.twitch.tv/oauth2/token"
@@ -181,7 +184,7 @@ async def check_twitch_streams():
                     )
     except Exception as e:
         print(f"Erreur lors de la vérification des streams Twitch : {e}")
-#FIN}
+#FIN}'''
 
 
 #{DEBUT : Event de demarrage de l'application
@@ -191,7 +194,7 @@ async def on_ready(): #fonction de lancement.
     print(f'\033[92m{bot.user.name} est en ligne ✔ \033[0m')
     status_swap.start() #lancement des status.
     bump_reminder.start()  # Lancement des rappels de bump
-    check_twitch_streams.start()  # Lancement de la vérification des streams Twitch
+    #check_twitch_streams.start()  # Lancement de la vérification des streams Twitch
     try:
         synced = await bot.tree.sync()
         print(f"\033[92mCommandes synchronisées : {len(synced)} commandes ✔\033[0m")
@@ -221,6 +224,16 @@ async def log_moderation_action(guild, message, reason):
         embed.add_field(name="Salon", value=message.channel.mention, inline=False)
         embed.set_footer(text=f"ID du message : {message.id}")
         await log_channel.send(embed=embed)
+
+#{DEBUT : Event de detection des messages
+#--------------------------------------
+# EVENEMENT IA DE L'APPLICATION
+conversation_manager = memory.memory(max_history=config.max_history) # management de l'historie des conversations.
+memory_instance = memory.memory() # instance de la classe memory
+memory_instance.clear_inactive_conversations(config.del_history) # nettoyer les conversations inactives après 1 heure (par défaut).
+def split_message(message, max_length=2000): #fonction pour la gestion du nombre de caractère max des reponses.
+    return [message[i:i+max_length] for i in range(0, len(message), max_length)]
+#FIN}
 
 # Fonctionnalité de confession
 class ConfessionModal(discord.ui.Modal, title="Confession"):
@@ -337,6 +350,40 @@ async def on_message(message):
     if message.author.bot:
         return
     
+    #{ IA ==========================================================================================
+    try:
+        keyWord = config.keyWord # Liste des mots-clés pour déclencher la réponse du bot.
+        if isinstance(message.channel, discord.DMChannel):#(2)
+            userId = message.author.id
+            UserMsg = message.content
+            #prompt = conversation_manager.manage_chatting(userId, UserMsg)
+            prompt = conversation_manager.manage_chatting(userId, UserMsg)
+
+            try: 
+                response_parts = split_message(prompt) #séparation de la réponse en parties pour éviter les dépassements de caractères.
+                for part in response_parts: #envoi de chaque partie de la réponse.
+                    await message.reply(part)
+                    return
+
+            except Exception as e: #gestion des erreurs
+                return f"Une erreur s'est produite: {e}"
+            
+        if bot.user.mention in message.content or any(keyword in message.content for keyword in keyWord) or message.reference and message.reference.resolved and message.reference.resolved.author == bot.user:
+            userId = message.author.id
+            UserMsg = message.content
+            prompt = conversation_manager.manage_chatting(userId, UserMsg)
+
+            try:
+                response_parts = split_message(prompt) #séparation de la réponse en parties pour éviter les dépassements de caractères.
+                for part in response_parts: #envoi de chaque partie de la réponse.
+                    await message.reply(part)
+
+            except Exception as e: #gestion des erreurs.
+                return await f"Une erreur c'est produite: {e}"
+
+    except Exception as e:
+        pass
+    #===============================================================================================}
 
     # Fonctionnalité 1 : Réponse automatique à une commande personnalisée
     # Charger les commandes personnalisées
@@ -933,8 +980,8 @@ async def remove_xp(interaction: discord.Interaction, user: discord.User, xp: in
 #FIN}
 
 #{DEBUT : CMD Envoie de message
-@bot.tree.command(name="send_message", description="Envoyer un message dans un salon spécifique.")
-async def send_message(interaction: discord.Interaction, channel: discord.TextChannel, message: str):
+@bot.tree.command(name="message", description="Envoyer un message dans un salon spécifique.")
+async def message(interaction: discord.Interaction, channel: discord.TextChannel, message: str):
     """
     :param interaction: L'interaction Discord.
     :param channel: Le salon où envoyer le message.
@@ -1154,8 +1201,8 @@ async def unsanction(interaction: discord.Interaction, user: discord.Member, act
 #FIN}
 
 #{DEBUT : CMD Commandes personnalisées
-@bot.tree.command(name="custom_command", description="Gérer les commandes personnalisées.")
-async def custom_command(interaction: discord.Interaction, action: str, command_name: str = None, message: str = None):
+@bot.tree.command(name="custom", description="Gérer les commandes personnalisées.")
+async def custom(interaction: discord.Interaction, action: str, command_name: str = None, message: str = None):
     """
     :param interaction: L'interaction Discord.
     :param action: L'action à effectuer (add, remove, list).
@@ -1280,7 +1327,7 @@ class BirthdayPanelView(View):
         await interaction.response.send_message(f"📜 **Liste des anniversaires enregistrés :**\n{birthday_list}", ephemeral=True)
 
 @bot.tree.command(name="anniv", description="Gérer les anniversaires des membres.")
-async def anniv_command(interaction: discord.Interaction):
+async def anniv(interaction: discord.Interaction):
     """
     Commande pour afficher le panneau de gestion des anniversaires.
     """
@@ -1467,8 +1514,8 @@ class ConfigSelector(Select):
         elif selected_option == "Messages de bump":
             await interaction.response.send_message("Veuillez entrer les nouveaux messages de bump (séparés par des virgules).", ephemeral=True)
 
-@bot.tree.command(name="config", description="Gérer la configuration actuelle du bot.")
-async def config_command(interaction: discord.Interaction):
+@bot.tree.command(name="pannel", description="Gérer la configuration actuelle du bot.")
+async def pannel(interaction: discord.Interaction):
     """
     Commande pour afficher le panneau de gestion des configurations.
     """
@@ -1486,6 +1533,25 @@ async def config_command(interaction: discord.Interaction):
         view=view,
         ephemeral=True
     )
+#FIN}
+
+#{DEBUT : CMD Restart
+@bot.tree.command(name="restart", description="Redémarrer le bot.")
+async def restart(interaction: discord.Interaction):
+    """
+    Commande pour redémarrer le bot.
+    """
+    # Vérifie si l'utilisateur qui exécute la commande est administrateur
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("Vous n'avez pas la permission d'utiliser cette commande.", ephemeral=True)
+        return
+    try:
+        await interaction.response.send_message("🔄 landhaven va redémarrer...", ephemeral=True)
+        await bot.close()
+    except Exception as e:
+        await interaction.followup.send(f"❌ Une erreur s'est produite lors du redémarrage : {e}", ephemeral=True)
+        print(f"Erreur lors du redémarrage : {e}")
+        return
 #FIN}
 
 #{DEBUT : Lancement de l'application

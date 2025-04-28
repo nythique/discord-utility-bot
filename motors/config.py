@@ -1,5 +1,5 @@
 #=================================================================================
-token= "MTI4ODU2MTgzMDExNzExODA0NA.GIG-cS.DqALym-J6JsEzvI5OFAr7zO_mx_Yu8WRvnKPCE"
+token = "MTI4ODU2MTgzMDExNzExODA0NA.GIG-cS.DqALym-J6JsEzvI5OFAr7zO_mx_Yu8WRvnKPCE"
 #================================================================================
 cycle = [
          "Mellieur serveur chill",
@@ -116,4 +116,11 @@ twitch_client_id = "VOTRE_CLIENT_ID"
 twitch_client_secret = "VOTRE_CLIENT_SECRET"
 twitch_channels = ["nom_de_la_chaine_twitch1", "nom_de_la_chaine_twitch2"]  # Liste des chaînes Twitch à surveiller
 stream_announcement_channel_id = 123456789012345678  # ID du salon Discord pour les annonces de stream
+#================================================================================== (AI CONFIG)
+api_key = "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"
+model = "whisper-large-v3" 
+system = "Tu est une intelligente assistante, réaliste et qui donne des reponses brèves mais de qualitées." 
+keyWord = ["Luna","Lunaris","luna","lunaris"] 
+max_history = 20
+del_history = 3600 # 1h
 #==================================================================================
