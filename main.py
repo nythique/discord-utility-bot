@@ -1548,7 +1548,7 @@ async def restart(interaction: discord.Interaction):
     try:
         await interaction.response.send_message("🔄 landhaven va redémarrer...", ephemeral=True)
         await bot.close()
-        os.execv(sys.executable, ['python'] + sys.argv)
+        os.execv(sys.executable, ['python'] + sys.argv) # Relance le bot
     except Exception as e:
         await interaction.followup.send(f"❌ Une erreur s'est produite lors du redémarrage : {e}", ephemeral=True)
         print(f"Erreur lors du redémarrage : {e}")
