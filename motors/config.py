@@ -118,9 +118,9 @@ twitch_channels = ["nom_de_la_chaine_twitch1", "nom_de_la_chaine_twitch2"]  # Li
 stream_announcement_channel_id = 123456789012345678  # ID du salon Discord pour les annonces de stream
 #================================================================================== (AI CONFIG)
 api_key = "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"
-model = "whisper-large-v3" 
+model = "llama-3.1-8b-instant" 
 system = "Tu est une intelligente assistante, réaliste et qui donne des reponses brèves mais de qualitées." 
-keyWord = ["Luna","Lunaris","luna","lunaris"] 
+keyWord = ["haven","Haven","land","Land","landhaven","LandHaven","landHaven","Landhaven"] 
 max_history = 20
 del_history = 3600 # 1h
 #==================================================================================
