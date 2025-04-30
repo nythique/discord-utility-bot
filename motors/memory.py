@@ -2,7 +2,7 @@
 # IMPORT DES FICHIER REQUIS
 from motors import config
 import datetime
-from groq import Groq 
+from groq import Groq
 #--------------------
 
 

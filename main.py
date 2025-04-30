@@ -1339,6 +1339,68 @@ async def anniv(interaction: discord.Interaction):
     )
 #FIN}
 
+#{DEBUT : CMD Wivia
+@bot.tree.command(name="wyvia", description="Commandes de sanction de la princesse Wyvia.")
+async def wyvia(interaction: discord.Interaction, user: discord.Member, action: str):
+    """
+    :param user: Le sujet concerné.
+    :param action: L'action à effectuer (emprisonner, liberer).
+    """
+     
+    try:
+
+        # Vérifie si l'utilisateur qui exécute la commande est la princesse Wyvia
+        if interaction.user.id != 1233020939898327092:  # ID de la princesse Wyvia
+            # Si l'utilisateur n'est pas la princesse Wyvia, envoie un message d'erreur
+            await interaction.response.send_message("<:hien:1243293271783112745> Hum tu essayes d'usurper l'identité de la princesse Wyvia ...\nTu iras en prison toi!", ephemeral=True)
+            return
+    
+        # Vérifie l'action demandée
+        action = action.lower()
+        if action not in ["emprisonner", "liberer"]:
+            await interaction.response.send_message("<a:popcat:1307808741353066497> Princesse, vous pouvez `emprisonner` ou `liberer`.\n-# L'orthographe doit-être correcte telle que precisée.", ephemeral=True)
+            return
+
+        # Effectuer l'action
+        if action == "emprisonner":
+            prison = discord.utils.get(interaction.guild.roles, name="En Prison")
+            if not prison:
+                    # Crée le rôle "En Prison" s'il n'existe pas
+                    prison = await interaction.guild.create_role(name="En Prison", permissions=discord.Permissions(send_messages=False, speak=False))
+                    for channel in interaction.guild.channels:
+                        await channel.set_permissions(prison, send_messages=False, speak=False)
+                    await user.add_roles(prison)
+                    await user.send(f"🔇 Vous avez été mis **en Prison** sur le serveur **{interaction.guild.name}**.")
+                    await interaction.followup.send(f"🔇 {user.mention} a été **muté**", ephemeral=True)
+
+        elif action == "liberer":
+            # Vérifie si le rôle "En Prison" existe
+            prison = discord.utils.get(interaction.guild.roles, name="En Prison")
+            
+            if not prison:
+                await interaction.followup.send("Le rôle `En Prison` n'existe pas dans ce serveur.", ephemeral=True)
+                return
+
+            # Vérifie si l'utilisateur a le rôle "En Prison"
+            if prison in user.roles:
+                await user.remove_roles(prison)
+                try:
+                    # Envoie un message privé à l'utilisateur
+                    await user.send(f"✅ Vous n'êtes plus **En Prison** sur le serveur **{interaction.guild.name}**.")
+                    await interaction.followup.send(f"✅ {user.mention} n'est plus **En Prison**.", ephemeral=True)
+                    return
+                except Exception as e:
+                    # Si l'envoi du message échoue, envoie un message d'erreur
+                    print(f"Erreur lors de l'envoi du message privé à {user.name}: {e}")
+                    await interaction.followup.send(f"✅ {user.mention} n'est plus **En Prison** mais, Impossible d'envoyer un message privé à {user.mention}.", ephemeral=True)
+                    return
+            else:
+                await interaction.response.send_message(f"❌ {user.mention} n'est pas En Prison.", ephemeral=True)
+                return
+
+    except Exception as e:
+        print(f"Erreur dans la commande wyvia : {e}")
+#FIN}
 
 #{DEBUT: CMD d'aide !
 @bot.tree.command(name="help", description="Afficher toutes les fonctionnalités du bot.")
