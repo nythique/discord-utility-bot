@@ -1347,10 +1347,10 @@ async def wyvia(interaction: discord.Interaction, user: discord.Member, action: 
     :param action: L'action à effectuer (emprisonner, liberer).
     """
      
-    try:
+    try: 
 
         # Vérifie si l'utilisateur qui exécute la commande est la princesse Wyvia
-        if interaction.user.id != 1233020939898327092:  # ID de la princesse Wyvia
+        if interaction.user.id != 1024341153216204830:  # ID de la princesse Wyvia
             # Si l'utilisateur n'est pas la princesse Wyvia, envoie un message d'erreur
             await interaction.response.send_message("<:hien:1243293271783112745> Hum tu essayes d'usurper l'identité de la princesse Wyvia ...\nTu iras en prison toi!", ephemeral=True)
             return
