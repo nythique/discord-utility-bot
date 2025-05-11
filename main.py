@@ -545,6 +545,15 @@ async def on_message(message):
     if user_id not in levels:
         levels[user_id] = {"xp": 0, "level": 1}
 
+    # Empêcher les membres "En Prison" de gagner de l'XP
+    prison_role = discord.utils.get(message.guild.roles, name="En Prison")
+    if prison_role and prison_role in getattr(message.author, "roles", []):
+        # On ne donne pas d'XP, ni de level up, ni de rôle de niveau
+        # Mais on continue à traiter les commandes si besoin
+        if message.content.startswith(config.prefix):
+            await bot.process_commands(message)
+        return
+
     # Ajouter de l'XP pour chaque message
     levels[user_id]["xp"] += 10  # Vous pouvez ajuster la valeur d'XP par message
     current_xp = levels[user_id]["xp"]
@@ -629,6 +638,28 @@ async def on_voice_state_update(member, before, after):
 
     if user_id not in levels:
         levels[user_id] = {"xp": 0, "level": 1}
+
+    # Empêcher les membres "En Prison" de gagner de l'XP vocal
+    prison_role = discord.utils.get(member.guild.roles, name="En Prison")
+    if prison_role and prison_role in getattr(member, "roles", []):
+        # On ne donne pas d'XP vocal, mais on continue à enregistrer les entrées/sorties si besoin
+        # On sauvegarde quand même le temps total et le compteur de join, mais pas d'XP
+        if after.channel and (not before.channel or before.channel.id != after.channel.id):
+            voice_activity[user_id]["join_count"] += 1
+            voice_activity[user_id]["last_join"] = int(time.time())
+        if before.channel and (not after.channel or before.channel.id != after.channel.id):
+            last_join = voice_activity[user_id]["last_join"]
+            if last_join:
+                time_spent = int(time.time()) - last_join
+                voice_activity[user_id]["total_time"] += time_spent
+                voice_activity[user_id]["last_join"] = None
+        # Sauvegarder les données de suivi des vocaux
+        with open(voice_activity_file, "w") as f:
+            json.dump(voice_activity, f, indent=4)
+        # Sauvegarder les données de niveaux (inchangées)
+        with open(levels_file, "w") as f:
+            json.dump(levels, f, indent=4)
+        return
 
     # Si l'utilisateur rejoint un salon vocal
     if after.channel and (not before.channel or before.channel.id != after.channel.id):
@@ -1345,20 +1376,19 @@ async def wyvia(interaction: discord.Interaction, user: discord.Member, action: 
     """
     :param user: Le sujet concerné.
     :param action: L'action à effectuer (emprisonner, liberer).
-    """
-     
-    try: 
-
+    """ 
+    try:
+        await interaction.response.defer(ephemeral=True)
         # Vérifie si l'utilisateur qui exécute la commande est la princesse Wyvia
         if interaction.user.id != 1024341153216204830:  # ID de la princesse Wyvia
             # Si l'utilisateur n'est pas la princesse Wyvia, envoie un message d'erreur
-            await interaction.response.send_message("<:hien:1243293271783112745> Hum tu essayes d'usurper l'identité de la princesse Wyvia ...\nTu iras en prison toi!", ephemeral=True)
+            await interaction.followup.send("<:hien:1243293271783112745> Hum tu essayes d'usurper l'identité de la princesse Wyvia ...\nTu iras en prison toi!", ephemeral=True)
             return
     
         # Vérifie l'action demandée
         action = action.lower()
         if action not in ["emprisonner", "liberer"]:
-            await interaction.response.send_message("<a:popcat:1307808741353066497> Princesse, vous pouvez `emprisonner` ou `liberer`.\n-# L'orthographe doit-être correcte telle que precisée.", ephemeral=True)
+            await interaction.followup.send("<a:popcat:1307808741353066497> Princesse, vous pouvez `emprisonner` ou `liberer`.\n-# L'orthographe doit-être correcte telle que precisée.", ephemeral=True)
             return
 
         # Effectuer l'action
@@ -1369,9 +1399,12 @@ async def wyvia(interaction: discord.Interaction, user: discord.Member, action: 
                     prison = await interaction.guild.create_role(name="En Prison", permissions=discord.Permissions(send_messages=False, speak=False))
                     for channel in interaction.guild.channels:
                         await channel.set_permissions(prison, send_messages=False, speak=False)
-                    await user.add_roles(prison)
-                    await user.send(f"🔇 Vous avez été mis **en Prison** sur le serveur **{interaction.guild.name}**.")
-                    await interaction.followup.send(f"🔇 {user.mention} a été **muté**", ephemeral=True)
+            await user.add_roles(prison)
+            try:
+                await user.send(f" Vous avez été mis **en Prison** sur le serveur **{interaction.guild.name}**.")
+                await interaction.followup.send(f" {user.mention} est désormais en prison ! Il ne pourra pas gagner des xp, tant qu'il ne sera pas libre.", ephemeral=True)
+            except discord.Forbidden:
+                await interaction.followup.send(f" {user.mention} est désormais en prison ! Mais impossible de l'envoyer un message privé.", ephemeral=True)
 
         elif action == "liberer":
             # Vérifie si le rôle "En Prison" existe
@@ -1395,7 +1428,7 @@ async def wyvia(interaction: discord.Interaction, user: discord.Member, action: 
                     await interaction.followup.send(f"✅ {user.mention} n'est plus **En Prison** mais, Impossible d'envoyer un message privé à {user.mention}.", ephemeral=True)
                     return
             else:
-                await interaction.response.send_message(f"❌ {user.mention} n'est pas En Prison.", ephemeral=True)
+                await interaction.followup.send(f"❌ {user.mention} n'est pas En Prison.", ephemeral=True)
                 return
 
     except Exception as e:
@@ -1572,9 +1605,9 @@ class ConfigSelector(Select):
         elif selected_option == "Chaînes Twitch surveillées":
             await interaction.response.send_message("Veuillez entrer les nouvelles chaînes Twitch (séparées par des virgules).", ephemeral=True)
         elif selected_option == "Bots de bump":
-            await interaction.response.send_message("Veuillez entrer les nouveaux bots de bump (séparés par des virgules).", ephemeral=True)
+            await interaction.response.send_message("Veuillez entrer les nouveaux bots de bump (séparées par des virgules).", ephemeral=True)
         elif selected_option == "Messages de bump":
-            await interaction.response.send_message("Veuillez entrer les nouveaux messages de bump (séparés par des virgules).", ephemeral=True)
+            await interaction.response.send_message("Veuillez entrer les nouveaux messages de bump (séparées par des virgules).", ephemeral=True)
 
 @bot.tree.command(name="pannel", description="Gérer la configuration actuelle du bot.")
 async def pannel(interaction: discord.Interaction):
