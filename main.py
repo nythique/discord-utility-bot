@@ -349,7 +349,7 @@ async def on_message(message):
     # Ignore les messages envoyés par le bot lui-même ou par d'autres bots
     if message.author.bot:
         return
-    
+    """
     #{ IA ==========================================================================================
     try:
         keyWord = config.keyWord # Liste des mots-clés pour déclencher la réponse du bot.
@@ -384,7 +384,7 @@ async def on_message(message):
     except Exception as e:
         pass
     #===============================================================================================}
-
+    """
     # Fonctionnalité 1 : Réponse automatique à une commande personnalisée
     # Charger les commandes personnalisées
     with open(custom_commands_file, "r") as f:
