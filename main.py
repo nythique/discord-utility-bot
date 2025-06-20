@@ -2,9 +2,7 @@
 from itertools import cycle
 from discord.ui import View, Button, Modal, TextInput, Select
 from discord.ext import commands, tasks
-from motors import config, memory
-from io import BytesIO
-from groq import Groq
+from config import settings as config
 import discord, json, os, asyncio, time, random, sys
 
 #FIN}
@@ -21,11 +19,10 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True  # Active l'intention pour les membres
 bot = commands.Bot(command_prefix=config.prefix, intents=intents)
-client = Groq(api_key=config.api_key) # Client pour l'API Groq
 #FIN}
 
 #{DEBUT : Creation de la fonction de verification des fichiers de niveaux
-data_folder = "datacenter" #Définir le chemin du dossier et du fichier
+data_folder = "cluster" #Définir le chemin du dossier et du fichier
 levels_file = os.path.join(data_folder, "levels.json")
 # Vérifier si le dossier existe, sinon le créer
 if not os.path.exists(data_folder):
@@ -149,7 +146,7 @@ async def get_twitch_access_token(): # Fonction pour obtenir un token d'accès T
 
 # Fonction pour vérifier si une chaîne Twitch est en direct
 async def is_twitch_channel_live(access_token, channel_name):
-    url = f"https://api.twitch.tv/helix/streams"
+    url = f"https://api.twitch.tv/..."
     headers = {
         "Client-ID": config.twitch_client_id,
         "Authorization": f"Bearer {access_token}"
@@ -224,16 +221,6 @@ async def log_moderation_action(guild, message, reason):
         embed.add_field(name="Salon", value=message.channel.mention, inline=False)
         embed.set_footer(text=f"ID du message : {message.id}")
         await log_channel.send(embed=embed)
-
-#{DEBUT : Event de detection des messages
-#--------------------------------------
-# EVENEMENT IA DE L'APPLICATION
-conversation_manager = memory.memory(max_history=config.max_history) # management de l'historie des conversations.
-memory_instance = memory.memory() # instance de la classe memory
-memory_instance.clear_inactive_conversations(config.del_history) # nettoyer les conversations inactives après 1 heure (par défaut).
-def split_message(message, max_length=2000): #fonction pour la gestion du nombre de caractère max des reponses.
-    return [message[i:i+max_length] for i in range(0, len(message), max_length)]
-#FIN}
 
 # Fonctionnalité de confession
 class ConfessionModal(discord.ui.Modal, title="Confession"):
@@ -349,42 +336,7 @@ async def on_message(message):
     # Ignore les messages envoyés par le bot lui-même ou par d'autres bots
     if message.author.bot:
         return
-    """
-    #{ IA ==========================================================================================
-    try:
-        keyWord = config.keyWord # Liste des mots-clés pour déclencher la réponse du bot.
-        if isinstance(message.channel, discord.DMChannel):#(2)
-            userId = message.author.id
-            UserMsg = message.content
-            #prompt = conversation_manager.manage_chatting(userId, UserMsg)
-            prompt = conversation_manager.manage_chatting(userId, UserMsg)
-
-            try: 
-                response_parts = split_message(prompt) #séparation de la réponse en parties pour éviter les dépassements de caractères.
-                for part in response_parts: #envoi de chaque partie de la réponse.
-                    await message.reply(part)
-                    return
-
-            except Exception as e: #gestion des erreurs
-                return f"Une erreur s'est produite: {e}"
-            
-        if bot.user.mention in message.content or any(keyword in message.content for keyword in keyWord) or message.reference and message.reference.resolved and message.reference.resolved.author == bot.user:
-            userId = message.author.id
-            UserMsg = message.content
-            prompt = conversation_manager.manage_chatting(userId, UserMsg)
-
-            try:
-                response_parts = split_message(prompt) #séparation de la réponse en parties pour éviter les dépassements de caractères.
-                for part in response_parts: #envoi de chaque partie de la réponse.
-                    await message.reply(part)
-
-            except Exception as e: #gestion des erreurs.
-                return await f"Une erreur c'est produite: {e}"
-
-    except Exception as e:
-        pass
-    #===============================================================================================}
-    """
+    
     # Fonctionnalité 1 : Réponse automatique à une commande personnalisée
     # Charger les commandes personnalisées
     with open(custom_commands_file, "r") as f:
