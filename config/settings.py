@@ -1,5 +1,6 @@
+import os
 #=================================================================================
-token = "TON TOKEN DISCORD"
+token = os.getenv("DISCORD_TOKEN")  # Token du bot Discord
 #================================================================================
 cycle = [
          "Mellieur serveur chill",
@@ -11,7 +12,7 @@ cycle = [
          "Un serveur pour tous !",
 ]
 #==================================================================================
-prefix="!"
+prefix= os.getenv("PREFIX", "!")  # Préfixe du bot, par défaut "!"
 #==================================================================================
 banned_words = [
     "Niquer","Va te faire foutre","Con","Conne","Connard",
@@ -79,9 +80,9 @@ welcome_messages = [
     "⚡ Bienvenue, {member.mention} ! Clique sur le bouton pour recevoir un accueil chaleureux !"
 ]
 #==================================================================================
-log_channel = 1167215903365152789 # ID du salon de log
+log_channel = os.getenv("LOG_CHANNEL")  
 #==================================================================================
-level_up_channel = 1278442194272780358 # ID du salon de niveau up
+level_up_channel = os.getenv("LEVEL_UP_CHANNEL")  # ID du salon pour les messages de niveau
 #==================================================================================
 level_up_messages = [
     "## <a:butterflieswhite:1283798557392109609> **{user}** a atteint le niveau **{level}** ! Continue comme ça ! 🚀",

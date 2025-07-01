@@ -47,7 +47,7 @@ Ce projet est un bot Discord multifonction orienté modération, gestion de comm
    pip install -r requirements.txt
    ```
 3. **Configurer le bot**
-   - Renommez/modifiez le fichier `config/settings.py` avec votre token Discord, vos IDs de salons, et vos préférences.
+   - Renommez/modifiez le fichier `config/settings.py`  et un fichier `.env`(organisé comme le fichier `exemple.env`) avec votre token Discord, vos IDs de salons, et vos préférences.
    - (Optionnel) Configurez les identifiants Twitch si vous souhaitez les notifications de stream.
 
 4. **Lancer le bot**
